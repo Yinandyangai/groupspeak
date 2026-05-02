@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: groupspeak
+      POSTGRES_PASSWORD: groupspeak
+      POSTGRES_DB: groupspeak
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U groupspeak"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Optional self-hosted TURN server (coturn) for WebRTC NAT traversal in production.
+  # Comment out for local dev (Google STUN is enough on the same network).
+  coturn:
+    image: coturn/coturn:latest
+    restart: unless-stopped
+    network_mode: host
+    profiles: ["prod"]
+    command: >
+      -n
+      --log-file=stdout
+      --min-port=49160 --max-port=49200
+      --lt-cred-mech
+      --realm=groupspeak.local
+      --user=${TURN_USER:-groupspeak}:${TURN_PASS:-changeme}
+      --no-tls --no-dtls
+
+volumes:
+  pgdata:
+  redisdata:

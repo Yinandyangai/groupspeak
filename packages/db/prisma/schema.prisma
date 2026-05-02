@@ -1,0 +1,133 @@
+// GroupSpeak Prisma schema
+// Run:  pnpm db:migrate
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users ─────────────────────────────────────────────────────────
+
+model User {
+  id          String   @id @default(cuid())
+  // Anonymous users have email = null. Auth users get a stable email.
+  email       String?  @unique
+  displayName String
+  /// 0-100, default 70. Used for matchmaking and shadow queue.
+  vibeScore   Float    @default(70)
+  /// Timestamp until which the user is banned. NULL = not banned.
+  banUntil    DateTime?
+  isAnonymous Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  participants  SessionParticipant[]
+  givenRatings  Rating[] @relation("RatingFromUser")
+  recvdRatings  Rating[] @relation("RatingToUser")
+  filedReports  Report[] @relation("ReportFromUser")
+  recvdReports  Report[] @relation("ReportToUser")
+
+  @@index([vibeScore])
+  @@index([banUntil])
+}
+
+// ─── Sessions ──────────────────────────────────────────────────────
+
+enum SessionMode {
+  video
+  audio
+  text
+}
+
+enum SessionIntent {
+  deep
+  casual
+  debate
+  vent
+  networking
+}
+
+model Session {
+  id          String         @id @default(cuid())
+  mode        SessionMode
+  intent      SessionIntent
+  /// Comma-separated topic tags shared at match time.
+  topics      String[]
+  startedAt   DateTime       @default(now())
+  endedAt     DateTime?
+  /// LLM-generated post-session summary, if any.
+  summary     String?
+
+  participants SessionParticipant[]
+  ratings      Rating[]
+  reports      Report[]
+
+  @@index([startedAt])
+}
+
+model SessionParticipant {
+  id        String   @id @default(cuid())
+  userId    String
+  sessionId String
+  joinedAt  DateTime @default(now())
+  leftAt    DateTime?
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sessionId])
+  @@index([sessionId])
+  @@index([userId])
+}
+
+// ─── Ratings ───────────────────────────────────────────────────────
+
+model Rating {
+  id        String   @id @default(cuid())
+  fromUserId String
+  toUserId   String
+  sessionId  String
+  /// 1-5 (Vibe rating)
+  score      Int
+  createdAt  DateTime @default(now())
+
+  fromUser User    @relation("RatingFromUser", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User    @relation("RatingToUser",   fields: [toUserId],   references: [id], onDelete: Cascade)
+  session  Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId, sessionId])
+  @@index([toUserId])
+}
+
+// ─── Reports & moderation ──────────────────────────────────────────
+
+enum ReportStatus {
+  pending
+  reviewed
+  upheld
+  dismissed
+}
+
+model Report {
+  id             String       @id @default(cuid())
+  reporterId     String
+  reportedId     String
+  sessionId      String?
+  reason         String
+  details        String?
+  /// AI moderation score 0-1 if available
+  aiScore        Float?
+  status         ReportStatus @default(pending)
+  createdAt      DateTime     @default(now())
+
+  reporter User     @relation("ReportFromUser", fields: [reporterId], references: [id], onDelete: Cascade)
+  reported User     @relation("ReportToUser",   fields: [reportedId], references: [id], onDelete: Cascade)
+  session  Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([reportedId])
+  @@index([status])
+}

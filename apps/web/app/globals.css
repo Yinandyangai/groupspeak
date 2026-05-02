@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  @apply bg-ink-950 text-ink-50;
+  height: 100%;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle gradient mesh used on the landing page */
+.bg-mesh {
+  background:
+    radial-gradient(80rem 50rem at 10% 0%, rgba(99, 102, 241, 0.15), transparent 60%),
+    radial-gradient(50rem 40rem at 100% 100%, rgba(129, 140, 248, 0.08), transparent 60%),
+    #050614;
+}
+
+button {
+  @apply transition-all duration-150;
+}
+
+.tag {
+  @apply inline-flex items-center gap-1 rounded-full border border-ink-700 bg-ink-800/60 px-3 py-1 text-xs text-ink-200;
+}
+
+.tag-active {
+  @apply border-accent bg-accent/20 text-white;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium;
+}
+
+.btn-primary {
+  @apply btn bg-accent text-white hover:bg-accent-glow disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.btn-secondary {
+  @apply btn border border-ink-700 bg-ink-800/60 text-ink-100 hover:border-ink-500 hover:bg-ink-700/60;
+}
+
+.btn-ghost {
+  @apply btn text-ink-300 hover:text-ink-50;
+}
+
+.card {
+  @apply rounded-2xl border border-ink-700/60 bg-ink-800/40 backdrop-blur-sm;
+}

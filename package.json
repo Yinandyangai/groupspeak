@@ -1,0 +1,23 @@
+{
+  "name": "groupspeak",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "concurrently -n web,realtime,prisma -c blue,magenta,green \"pnpm --filter @groupspeak/web dev\" \"pnpm --filter @groupspeak/realtime dev\" \"pnpm --filter @groupspeak/db studio\"",
+    "dev:web": "pnpm --filter @groupspeak/web dev",
+    "dev:realtime": "pnpm --filter @groupspeak/realtime dev",
+    "build": "pnpm --filter @groupspeak/db generate && pnpm --filter @groupspeak/web build && pnpm --filter @groupspeak/realtime build",
+    "db:migrate": "pnpm --filter @groupspeak/db migrate",
+    "db:generate": "pnpm --filter @groupspeak/db generate",
+    "db:seed": "pnpm --filter @groupspeak/db seed"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1",
+    "typescript": "^5.6.3"
+  },
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20"
+  }
+}
